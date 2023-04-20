@@ -1,5 +1,10 @@
-const { scheduleTask, cancelTask } = require('./lib/scheduler');
-const { setMaxConcurrency } = require('./lib/concurrency');
-const Batch = require('./lib/batch');
+const scheduler = require('./lib/scheduler');
+const concurrency = require('./lib/concurrency');
 
-module.exports = { scheduleTask, cancelTask, setMaxConcurrency, Batch };
+module.exports = {
+  scheduleTask: scheduler.scheduleTask.bind(scheduler),
+  cancelTask: scheduler.cancelTask.bind(scheduler),
+  setMaxConcurrency: concurrency.setMaxConcurrency.bind(concurrency),
+  startConcurrencyMonitor: concurrency.start.bind(concurrency),
+  stopConcurrencyMonitor: concurrency.stop.bind(concurrency)
+};
