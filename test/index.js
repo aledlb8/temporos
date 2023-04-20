@@ -1,58 +1,78 @@
 const temporos = require('../index');
 
-// Custom logger function
-function myLogger(message) {
-  console.log(`[Temporos] ${message}`);
-}
+// Test basic task scheduling
+const taskId = temporos.scheduleTask(() => console.log('Hello, world!'), 1000);
+console.log(`Scheduled task with ID ${taskId}`);
 
-// Simple task
-function myTask() {
-  console.log('Running myTask');
-}
+// Test task cancellation
+setTimeout(() => {
+  temporos.cancelTask(taskId);
+  console.log(`Cancelled task with ID ${taskId}`);
+}, 5000);
 
-// Task with dependencies
-function myDependencyTask() {
-  console.log('Running myDependencyTask');
-}
-
-function myDependentTask() {
-  console.log('Running myDependentTask');
-}
-
-const dependencyTaskId = temporos.scheduleTask(myDependencyTask, 60000, { logger: myLogger });
-const dependentTaskId = temporos.scheduleTask(myDependentTask, 10000, { dependencies: [dependencyTaskId] });
-
-// Advanced scheduling options
-class WeekdayTask extends temporos.Task {
-  isDue() {
-    const now = new Date();
-    const dayOfWeek = now.getDay();
-    return dayOfWeek === 1 || dayOfWeek === 3; // Monday = 1, Wednesday = 3
+// Test batch task scheduling
+const batchTasks = [
+  {
+    callback: () => console.log('Batch task 1'),
+    interval: 5000
+  },
+  {
+    callback: () => console.log('Batch task 2'),
+    interval: 10000
+  },
+  {
+    callback: () => console.log('Batch task 3'),
+    interval: 15000
   }
+];
+batchTasks.forEach(task => temporos.scheduleTask(task.callback, task.interval, { batch: true }));
+
+// Test task dependencies
+const task1Id = temporos.scheduleTask(() => console.log('Task 1'), 1000);
+const task2Id = temporos.scheduleTask(() => console.log('Task 2'), 2000, { dependencies: [task1Id] });
+const task3Id = temporos.scheduleTask(() => console.log('Task 3'), 3000, { dependencies: [task2Id] });
+
+// Test concurrency control
+temporos.setMaxConcurrency(2);
+for (let i = 1; i <= 10; i++) {
+  temporos.scheduleTask(() => {
+    console.log(`Concurrent task ${i}`);
+    return new Promise(resolve => setTimeout(resolve, 5000));
+  }, 1000);
 }
 
-const weekdayTaskId = temporos.scheduleTask(myTask, 86400000, { TaskClass: WeekdayTask });
+// Test advanced scheduling options
+const weekdayTaskId = temporos.scheduleTask(() => console.log('Weekday task'), 86400000, {
+  weekdays: [1, 3, 5]
+});
+const timeOfDayTaskId = temporos.scheduleTask(() => console.log('Time of day task'), 86400000, {
+  timesOfDay: ['08:00', '12:00', '16:00']
+});
 
-// Batch task scheduling
-const batchTaskId1 = temporos.scheduleTask(myTask, 60000, { batch: true });
-const batchTaskId2 = temporos.scheduleTask(myTask, 60000, { batch: true });
+// Test external system integration (just an example)
+const messageQueue = {
+  getNextMessage: () => new Promise(resolve => setTimeout(() => resolve('Test message'), 5000))
+};
+async function processMessage() {
+  const message = await messageQueue.getNextMessage();
+  console.log(`Processing message: ${message}`);
+  await new Promise(resolve => setTimeout(resolve, 5000));
+  console.log(`Processed message: ${message}`);
+  await processMessage();
+}
+temporos.scheduleTask(processMessage, 0);
 
-// Cancelling a task
-setTimeout(() => {
-  temporos.cancelTask(dependencyTaskId);
-  console.log(`Cancelled task ${dependencyTaskId}`);
-}, 10000);
-
-// Dynamic concurrency control
-temporos.setMaxConcurrency(4);
-
-// Get running tasks
-setTimeout(() => {
-  console.log(`Running tasks: ${temporos.getRunningTasks()}`);
-}, 15000);
-
-// Start concurrency monitor
+// Test dynamic concurrency control
 temporos.startConcurrencyMonitor();
+setTimeout(() => temporos.stopConcurrencyMonitor(), 30000);
 
-// Custom logger
-temporos.scheduleTask(myTask, 5000, { logger: myLogger });
+// Test custom logging
+temporos.scheduleTask(() => console.log('Custom logging'), 5000, {
+  logger: msg => console.log(`[${new Date().toISOString()}] ${msg}`)
+});
+
+// Test getRunningTasks
+setTimeout(() => {
+  const runningTasks = temporos.getRunningTasks();
+  console.log(`Running tasks: ${runningTasks.join(', ')}`);
+}, 15000);
