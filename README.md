@@ -10,50 +10,63 @@ To install Temporos, use npm:
 npm install temporos
 ```
 
+
 ## Usage
-To use Temporos, you first need to require the package in your code:
-```js
+
+To use Temporos, first import it into your project:
+
+```javascript
 const temporos = require('temporos');
 ```
 
 ### Scheduling a Task
-To schedule a task, use the `scheduleTask` method, passing in a callback function and the interval at which you want the task to run:
+To schedule a task, call the `  ` function and pass it a callback function and an interval in milliseconds:
+
 ```js
 const taskId = temporos.scheduleTask(myCallback, 60000); // Run myCallback every minute
 ```
 
-You can also pass in optional options object as the third argument, with the following properties:
-
-- `logger`: A custom logger function for logging task execution and errors.
-- `dependencies`: An array of task IDs that this task depends on. The task will only run once all its dependencies have completed.
-
-### Cancelling a Task
-To cancel a scheduled task, use the `cancelTask` method and pass in the task ID:
-
-```js
-temporos.cancelTask(taskId);
-```
-
 ### Customizable Logging
-Temporos allows you to pass in a custom logger function to log task execution and errors. To use a custom logger function, pass in an options object with a `logger` property when scheduling a task:
+Temporos provides a default logging function that logs to the console, but users can also provide their own custom logging function. To do this, simply pass a logger function as an option when scheduling a task:
+
 ```js
-const taskId = temporos.scheduleTask(myCallback, 60000, { logger: myLogger });
+function customLogger(msg) {
+  // Implement custom logging here
+}
+
+temporos.scheduleTask(myTask, 5000, { logger: customLogger });
 ```
 
 ### Advanced Scheduling Options
-Temporos offers advanced scheduling options, such as scheduling tasks on specific days of the week or at specific times of the day. To use these options, you can create a subclass of `Task` and implement the `isDue` method to check if the task is due to run. Here's an example of a task that runs on Mondays and Wednesdays:
+By default, tasks are scheduled to run at a fixed interval, but Temporos also provides options for more advanced scheduling. For example, tasks can be scheduled to run on specific days of the week or at specific times of day.
 
 ```js
-class WeekdayTask extends temporos.Task {
-  isDue() {
-    const now = new Date();
-    const dayOfWeek = now.getDay();
-    return dayOfWeek === 1 || dayOfWeek === 3; // Monday = 1, Wednesday = 3
-  }
+function myTask() {
+  console.log('Running task...');
 }
 
-const taskId = temporos.scheduleTask(myCallback, 86400000, { TaskClass: WeekdayTask }); // Run myCallback every day, but only execute on Mondays and Wednesdays
+temporos.scheduleTask(myTask, null, {
+  weekdays: [1, 3, 5],  // Run on Mondays, Wednesdays, and Fridays
+  timesOfDay: ['09:00', '13:00', '17:00']  // Run at 9am, 1pm, and 5pm
+});
 ```
+
+### Task Dependencies
+Sometimes it's necessary to run one task only after another has completed. Temporos provides a mechanism for specifying task dependencies. When scheduling a task, simply provide an array of task IDs that the new task depends on:
+
+```js
+function taskA() {
+  console.log('Running task A...');
+}
+
+function taskB() {
+  console.log('Running task B...');
+}
+
+const taskIdA = temporos.scheduleTask(taskA, 5000);
+const taskIdB = temporos.scheduleTask(taskB, 5000, { dependencies: [taskIdA] })
+```
+In this example, task B will not run until task A has completed.
 
 ### Dynamic Concurrency Control
 Temporos allows you to set a maximum concurrency level for running tasks, and will automatically adjust the concurrency level based on system resource usage. To start the concurrency monitor, use the `startConcurrencyMonitor` method:
@@ -68,20 +81,17 @@ To set the maximum concurrency level, use the `setMaxConcurrency` method:
 temporos.setMaxConcurrency(4);
 ```
 
-### Task Dependencies
-Temporos allows you to specify dependencies for tasks, so that a task will only run once all of its dependencies have completed. To specify dependencies, pass in an array of task IDs when scheduling a task:
-
-```js
-const task1Id = temporos.scheduleTask(myCallback1, 60000);
-const task2Id = temporos.scheduleTask(myCallback2, 120000, { dependencies: [task1Id] }); // Run myCallback2 only after myCallback1 has completed
-```
-
 ### Batch Task Scheduling
 Temporos also allows you to schedule tasks in batches, instead of running each task as soon as it's due. To use batch task scheduling, simply schedule tasks as usual, and Temporos will automatically group tasks that are due at the same time together and run them in batches, up to the maximum concurrency level. To enable batch task scheduling, simply set the `batch` option to `true` when scheduling a task:
 
 ```js
 const taskId = temporos.scheduleTask(myCallback, 60000, { batch: true });
 ```
+
+### Integration with External Systems
+Temporos can be easily integrated with external systems by scheduling tasks based on events or data from those systems. For example, you could schedule a task to run every time a new record is added to a database table, or every time a message is received from a message queue.
+
+The specific details of the integration will depend on the external system being used, but Temporos provides a flexible API that can be adapted to a wide range of use cases.
 
 ## API
 Temporos offers the following methods:
