@@ -1,0 +1,24 @@
+{
+  "name": "temporos",
+  "version": "1.0.0",
+  "description": "A flexible and efficient task scheduler for Node.js",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/aledlb8/temporos.git"
+  },
+  "keywords": [
+    "scheduler",
+    "tasks"
+  ],
+  "author": "Your Name",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/aledlb8/temporos/issues"
+  },
+  "homepage": "https://github.com/aledlb8/temporos#readme",
+  "dependencies": {}
+}
