@@ -20,7 +20,7 @@ const temporos = require('temporos');
 ```
 
 ### Scheduling a Task
-To schedule a task, call the `  ` function and pass it a callback function and an interval in milliseconds:
+To schedule a task, call the `scheduleTask()` function and pass it a callback function and an interval in milliseconds:
 
 ```js
 const taskId = temporos.scheduleTask(myCallback, 60000); // Run myCallback every minute
@@ -106,4 +106,4 @@ Temporos offers the following methods:
 Contributions to Temporos are welcome! To contribute, please fork the repository and submit a pull request.
 
 ## License
-Temporos is licensed under the MIT license. See the [LICENSE]() file for details.
+Temporos is licensed under the MIT license. See the [LICENSE](https://opensource.org/license/mit/) file for details.
