@@ -44,7 +44,7 @@ const taskId = temporos.scheduleTask(myCallback, 60000, { logger: myLogger });
 Temporos offers advanced scheduling options, such as scheduling tasks on specific days of the week or at specific times of the day. To use these options, you can create a subclass of `Task` and implement the `isDue` method to check if the task is due to run. Here's an example of a task that runs on Mondays and Wednesdays:
 
 ```js
-class WeekdayTask extends Task {
+class WeekdayTask extends temporos.Task {
   isDue() {
     const now = new Date();
     const dayOfWeek = now.getDay();
