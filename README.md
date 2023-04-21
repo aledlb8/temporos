@@ -88,6 +88,20 @@ Temporos also allows you to schedule tasks in batches, instead of running each t
 const taskId = temporos.scheduleTask(myCallback, 60000, { batch: true });
 ```
 
+### Prioritizing a task
+Temporos allows you to prioritize certain task by adding it to a prority queue:
+
+```
+temporos.prioritizeTask(taskId);
+```
+
+### Cluster
+This implementation uses the `cluster` module in Node.js to fork multiple worker processes that run the same code. Each worker process checks for tasks to run every second, allowing tasks to be executed concurrently across multiple CPU cores.
+
+```js
+const scheduler = new ClusterScheduler();
+```
+
 ### Integration with External Systems
 Temporos can be easily integrated with external systems by scheduling tasks based on events or data from those systems. For example, you could schedule a task to run every time a new record is added to a database table, or every time a message is received from a message queue.
 
@@ -97,10 +111,13 @@ The specific details of the integration will depend on the external system being
 Temporos offers the following methods:
 
 - `scheduleTask(callback: function, interval: number, options?: object): symbol` - Schedules a task to run at the specified interval. Returns a unique task ID.
+- `scheduleCronTask(callback: function, interval: number, options?: object): symbol` - Schedules a task to run at the specified interval using cron. Returns a unique task ID.
 - `cancelTask(taskId: symbol): void` - Cancels a scheduled task.
 - `startConcurrencyMonitor(interval?: number): void` - Starts the concurrency monitor, which adjusts the maximum concurrency level based on system resource usage. The interval parameter - specifies how often to check system resource usage (default is 1000ms).
+- `stopConcurrencyMonitor(): void` - Stops the concurrency monitor.
 - `setMaxConcurrency(max: number): void` - Sets the maximum concurrency level for running tasks.
 - `getRunningTasks(): symbol[]` - Returns an array of task IDs for tasks that are currently running.
+- `prioritizeTask(taskId: symbol): void` - Add task to a prority queue.
 
 ## Contributing
 Contributions to Temporos are welcome! To contribute, please fork the repository and submit a pull request.
