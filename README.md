@@ -91,7 +91,7 @@ const taskId = temporos.scheduleTask(myCallback, 60000, { batch: true });
 ### Prioritizing a task
 Temporos allows you to prioritize certain task by adding it to a prority queue:
 
-```
+```js
 temporos.prioritizeTask(taskId);
 ```
 
