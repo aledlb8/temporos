@@ -20,5 +20,7 @@
     "url": "https://github.com/aledlb8/temporos/issues"
   },
   "homepage": "https://github.com/aledlb8/temporos#readme",
-  "dependencies": {}
+  "dependencies": {
+    "cron-parser": "^4.8.1"
+  }
 }
