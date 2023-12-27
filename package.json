@@ -1,6 +1,6 @@
 {
   "name": "temporos",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "A flexible and efficient task scheduler for Node.js",
   "main": "index.js",
   "scripts": {

@@ -11,6 +11,9 @@ module.exports = {
   Task,
   Scheduler: scheduler,
   ClusterScheduler,
+  prioritizeTask: (taskId, priority) => {
+    scheduler.prioritizeTask(taskId, priority);
+  },
   cancelTask: scheduler.cancelTask.bind(scheduler),
   scheduleTask: scheduler.scheduleTask.bind(scheduler),
   getRunningTasks: scheduler.getRunningTasks.bind(scheduler),
