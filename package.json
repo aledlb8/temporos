@@ -1,6 +1,6 @@
 {
   "name": "temporos",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "A flexible and efficient task scheduler for Node.js",
   "main": "index.js",
   "scripts": {
@@ -21,6 +21,6 @@
   },
   "homepage": "https://github.com/aledlb8/temporos#readme",
   "dependencies": {
-    "cron-parser": "^4.8.1"
+    "cron-parser": "^4.9.0"
   }
 }
