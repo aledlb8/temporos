@@ -97,4 +97,4 @@ export function createError(
   details?: Record<string, unknown>
 ): TemporosError {
   return new TemporosError(message, code, details);
-} 
+}

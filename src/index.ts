@@ -34,32 +34,32 @@ export default {
    * Task class for creating custom tasks
    */
   Task,
-  
+
   /**
    * Scheduler class for creating custom schedulers
    */
   Scheduler,
-  
+
   /**
    * ClusterScheduler class for creating distributed schedulers
    */
   ClusterScheduler,
-  
+
   /**
    * Error types
    */
   TemporosError,
-  
+
   /**
    * Error codes
    */
   ErrorCode,
-  
+
   /**
    * Task status enum
    */
   TaskStatus,
-  
+
   /**
    * Schedule a task to run at a specified interval
    * @param callback - The function to execute
@@ -70,7 +70,7 @@ export default {
   scheduleTask(callback: TaskCallback, interval: number, options?: TaskOptions): string {
     return scheduler.scheduleTask(callback, interval, options);
   },
-  
+
   /**
    * Schedule a task using a cron expression
    * @param callback - The function to execute
@@ -81,7 +81,7 @@ export default {
   scheduleCronTask(callback: TaskCallback, cronExpression: string, options?: TaskOptions): string {
     return scheduler.scheduleCronTask(callback, cronExpression, options);
   },
-  
+
   /**
    * Cancel a scheduled task
    * @param taskId - The ID of the task to cancel
@@ -90,7 +90,7 @@ export default {
   cancelTask(taskId: string): boolean {
     return scheduler.cancelTask(taskId);
   },
-  
+
   /**
    * Set the maximum number of tasks that can run concurrently
    * @param max - The maximum number of concurrent tasks
@@ -98,7 +98,7 @@ export default {
   setMaxConcurrency(max: number): void {
     scheduler.setMaxConcurrency(max);
   },
-  
+
   /**
    * Prioritize a task
    * @param taskId - The ID of the task to prioritize
@@ -108,7 +108,7 @@ export default {
   prioritizeTask(taskId: string, priority: number): boolean {
     return scheduler.prioritizeTask(taskId, priority);
   },
-  
+
   /**
    * Get the IDs of all running tasks
    * @returns An array of task IDs
@@ -116,7 +116,7 @@ export default {
   getRunningTasks(): string[] {
     return scheduler.getRunningTasks();
   },
-  
+
   /**
    * Pause a task
    * @param taskId - The ID of the task to pause
@@ -125,7 +125,7 @@ export default {
   pauseTask(taskId: string): boolean {
     return scheduler.pauseTask(taskId);
   },
-  
+
   /**
    * Resume a paused task
    * @param taskId - The ID of the task to resume
@@ -134,7 +134,7 @@ export default {
   resumeTask(taskId: string): boolean {
     return scheduler.resumeTask(taskId);
   },
-  
+
   /**
    * Get statistics for a task
    * @param taskId - The ID of the task
@@ -143,7 +143,7 @@ export default {
   getTaskStatistics(taskId: string): Promise<TaskExecutionResult[]> {
     return scheduler.getTaskStatistics(taskId);
   },
-  
+
   /**
    * Start the concurrency monitor
    * @param interval - The interval in milliseconds at which to check system resources
@@ -151,27 +151,27 @@ export default {
   startConcurrencyMonitor(interval?: number): void {
     concurrencyMonitor.start(interval);
   },
-  
+
   /**
    * Stop the concurrency monitor
    */
   stopConcurrencyMonitor(): void {
     concurrencyMonitor.stop();
   },
-  
+
   /**
    * Get the current configuration
    * @returns The current configuration
    */
   getConfig,
-  
+
   /**
    * Update the configuration
    * @param newConfig - New configuration options
    * @returns The updated configuration
    */
   updateConfig,
-  
+
   /**
    * Create a new cluster scheduler
    * @param numWorkers - Number of worker processes (defaults to CPU count)
@@ -193,4 +193,4 @@ export {
   IClusterScheduler,
   IConcurrencyMonitor,
   TemporosConfig,
-}; 
+};

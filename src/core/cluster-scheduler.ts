@@ -47,14 +47,14 @@ export class ClusterScheduler extends EventEmitter implements IClusterScheduler 
    */
   constructor(numWorkers?: number) {
     super();
-    
+
     this.numWorkers = numWorkers || os.cpus().length;
     this.workers = [];
     this.scheduler = null;
     this.workerMap = new Map();
-    
+
     logger.debug({ numWorkers: this.numWorkers }, 'ClusterScheduler initialized');
-    
+
     // Set up message handlers
     if (cluster.isPrimary) {
       cluster.on('message', this.handleWorkerMessage.bind(this));
@@ -67,50 +67,50 @@ export class ClusterScheduler extends EventEmitter implements IClusterScheduler 
   start(): void {
     if (cluster.isPrimary) {
       logger.info({ numWorkers: this.numWorkers }, 'Starting ClusterScheduler in primary mode');
-      
+
       // Fork worker processes
       for (let i = 0; i < this.numWorkers; i++) {
         this.addWorker();
       }
-      
+
       // Handle worker exit
       cluster.on('exit', (worker, code, signal) => {
         logger.warn(
-          { 
-            workerId: worker.id, 
+          {
+            workerId: worker.id,
             pid: worker.process.pid,
             code,
             signal,
-          }, 
+          },
           `Worker ${worker.id} (PID: ${worker.process.pid}) died with code ${code} and signal ${signal}`
         );
-        
+
         // Replace the dead worker
         const newWorkerId = this.addWorker();
         const newWorker = this.workerMap.get(Number(newWorkerId));
-        
+
         // Find and replace the dead worker in the workers array
         const index = this.workers.findIndex(w => w.id === worker.id);
         if (index !== -1 && newWorker) {
           this.workers[index] = newWorker;
         }
-        
+
         // Emit event
         this.emit('workerDied', worker.id, code, signal);
         this.emit('workerAdded', newWorkerId);
       });
-      
+
       // Emit event
       this.emit('started', this.numWorkers);
     } else {
       logger.info('Starting ClusterScheduler in worker mode');
-      
+
       // Create a local scheduler for this worker
       this.scheduler = new Scheduler();
-      
+
       // Listen for messages from the primary
       process.on('message', this.handlePrimaryMessage.bind(this));
-      
+
       // Emit event
       this.emit('started', 0);
     }
@@ -122,24 +122,24 @@ export class ClusterScheduler extends EventEmitter implements IClusterScheduler 
   stop(): void {
     if (cluster.isPrimary) {
       logger.info('Stopping ClusterScheduler in primary mode');
-      
+
       // Kill all workers
       for (const worker of this.workers) {
         worker.kill();
       }
-      
+
       this.workers = [];
       this.workerMap.clear();
-      
+
       // Emit event
       this.emit('stopped');
     } else if (this.scheduler) {
       logger.info('Stopping ClusterScheduler in worker mode');
-      
+
       // Stop the local scheduler
       this.scheduler.stop();
       this.scheduler = null;
-      
+
       // Emit event
       this.emit('stopped');
     }
@@ -156,17 +156,17 @@ export class ClusterScheduler extends EventEmitter implements IClusterScheduler 
     if (cluster.isPrimary) {
       // Choose a worker to run the task
       const worker = this.getNextWorker();
-      
+
       if (!worker) {
         throw createError(
           'No workers available to schedule task',
           ErrorCode.WORKER_NOT_FOUND
         );
       }
-      
+
       const taskId = uuidv4();
       const callbackString = callback.toString();
-      
+
       // Send message to worker
       worker.send({
         type: 'scheduleTask',
@@ -175,19 +175,19 @@ export class ClusterScheduler extends EventEmitter implements IClusterScheduler 
         interval,
         options,
       } as ClusterMessage);
-      
+
       logger.debug(
-        { 
-          taskId, 
+        {
+          taskId,
           workerId: worker.id,
           interval,
-        }, 
+        },
         `Task scheduled on worker ${worker.id}`
       );
-      
+
       // Emit event
       this.emit('taskScheduled', taskId, worker.id);
-      
+
       return `${worker.id}:${taskId}`;
     } else if (this.scheduler) {
       return this.scheduler.scheduleTask(callback, interval, options);
@@ -208,37 +208,37 @@ export class ClusterScheduler extends EventEmitter implements IClusterScheduler 
     if (cluster.isPrimary) {
       // Parse the combined ID to get worker ID and task ID
       const [workerIdStr, actualTaskId] = taskId.split(':');
-      
+
       if (!workerIdStr || !actualTaskId) {
         logger.warn({ taskId }, 'Invalid task ID format for cancellation');
         return false;
       }
-      
+
       const workerId = Number(workerIdStr);
       const worker = this.workerMap.get(workerId);
-      
+
       if (!worker) {
         logger.warn({ workerId, taskId }, 'Worker not found for task cancellation');
         return false;
       }
-      
+
       // Send message to worker
       worker.send({
         type: 'cancelTask',
         taskId: actualTaskId,
       } as ClusterMessage);
-      
+
       logger.debug(
-        { 
-          taskId: actualTaskId, 
+        {
+          taskId: actualTaskId,
           workerId,
-        }, 
+        },
         `Task cancellation requested on worker ${workerId}`
       );
-      
+
       // Emit event
       this.emit('taskCancellationRequested', actualTaskId, workerId);
-      
+
       return true;
     } else if (this.scheduler) {
       return this.scheduler.cancelTask(taskId);
@@ -261,15 +261,15 @@ export class ClusterScheduler extends EventEmitter implements IClusterScheduler 
           max,
         } as ClusterMessage);
       }
-      
+
       logger.debug(
-        { 
+        {
           maxConcurrency: max,
           numWorkers: this.workers.length,
-        }, 
+        },
         `Max concurrency set to ${max} on all workers`
       );
-      
+
       // Emit event
       this.emit('maxConcurrencyChanged', max);
     } else if (this.scheduler) {
@@ -289,52 +289,66 @@ export class ClusterScheduler extends EventEmitter implements IClusterScheduler 
         const results: Record<string, string[]> = {};
         let pendingWorkers = this.workers.length;
         
+        // If no workers, return empty results immediately
+        if (pendingWorkers === 0) {
+          return resolve(results);
+        }
+
+        // Create a map of message handlers for each worker
+        const messageHandlers = new Map<number, (msg: any) => void>();
+
         // Handle responses from workers
         const messageHandler = (worker: Worker, msg: any) => {
           if (msg.type === 'getRunningTasksResponse') {
             results[worker.id.toString()] = msg.tasks;
             pendingWorkers--;
             
+            // Remove this specific worker's listener immediately
+            worker.removeListener('message', messageHandlers.get(worker.id)!);
+            messageHandlers.delete(worker.id);
+
             if (pendingWorkers === 0) {
-              // Remove the temporary message handler
-              for (const w of this.workers) {
-                w.removeListener('message', messageHandlers.get(w.id)!);
+              // All workers have responded, clear timeout
+              if (timeoutId) {
+                clearTimeout(timeoutId);
+                timeoutId = null;
               }
-              
               resolve(results);
             }
           }
         };
-        
-        // Create a map of message handlers for each worker
-        const messageHandlers = new Map<number, (msg: any) => void>();
-        
+
         // Send request to all workers
         for (const worker of this.workers) {
           const handler = (msg: any) => messageHandler(worker, msg);
           messageHandlers.set(worker.id, handler);
           worker.on('message', handler);
-          
+
           worker.send({
             type: 'getRunningTasks',
           } as ClusterMessage);
         }
-        
+
         // Handle timeout
-        setTimeout(() => {
+        let timeoutId: NodeJS.Timeout | null = setTimeout(() => {
           if (pendingWorkers > 0) {
             logger.warn(
-              { 
+              {
                 pendingWorkers,
                 totalWorkers: this.workers.length,
-              }, 
+              },
               'Timeout waiting for running tasks response from workers'
             );
-            
-            // Remove the temporary message handlers
-            for (const w of this.workers) {
-              w.removeListener('message', messageHandlers.get(w.id)!);
+
+            // Remove the remaining message handlers
+            for (const [workerId, handler] of messageHandlers.entries()) {
+              const worker = this.workerMap.get(workerId);
+              if (worker) {
+                worker.removeListener('message', handler);
+              }
             }
+            messageHandlers.clear();
+            timeoutId = null;
             
             resolve(results);
           }
@@ -342,7 +356,7 @@ export class ClusterScheduler extends EventEmitter implements IClusterScheduler 
       });
     } else if (this.scheduler) {
       const tasks = this.scheduler.getRunningTasks();
-      
+
       // Send response to primary
       if (process.send) {
         process.send({
@@ -350,7 +364,7 @@ export class ClusterScheduler extends EventEmitter implements IClusterScheduler 
           tasks,
         } as ClusterMessage);
       }
-      
+
       if (cluster.worker) {
         return { [cluster.worker.id.toString()]: tasks };
       }
@@ -380,23 +394,23 @@ export class ClusterScheduler extends EventEmitter implements IClusterScheduler 
         ErrorCode.INVALID_PARAMETER
       );
     }
-    
+
     const worker = cluster.fork();
     this.workers.push(worker);
     this.workerMap.set(worker.id, worker);
-    
+
     logger.debug(
-      { 
+      {
         workerId: worker.id,
         pid: worker.process.pid,
         totalWorkers: this.workers.length,
-      }, 
+      },
       `Added worker ${worker.id} (PID: ${worker.process.pid})`
     );
-    
+
     // Emit event
     this.emit('workerAdded', worker.id.toString());
-    
+
     return worker.id.toString();
   }
 
@@ -410,36 +424,36 @@ export class ClusterScheduler extends EventEmitter implements IClusterScheduler 
       logger.warn('Cannot remove workers from a worker process');
       return false;
     }
-    
+
     const workerIdNum = Number(workerId);
     if (isNaN(workerIdNum)) {
       logger.warn({ workerId }, 'Invalid worker ID for removal');
       return false;
     }
-    
+
     const worker = this.workerMap.get(workerIdNum);
-    
+
     if (!worker) {
       logger.warn({ workerId }, 'Worker not found for removal');
       return false;
     }
-    
+
     // Remove the worker
     worker.kill();
     this.workerMap.delete(workerIdNum);
     this.workers = this.workers.filter(w => w.id !== workerIdNum);
-    
+
     logger.debug(
-      { 
+      {
         workerId,
         remainingWorkers: this.workers.length,
-      }, 
+      },
       `Removed worker ${workerId}`
     );
-    
+
     // Emit event
     this.emit('workerRemoved', workerId);
-    
+
     return true;
   }
 
@@ -452,34 +466,34 @@ export class ClusterScheduler extends EventEmitter implements IClusterScheduler 
     if (!message || typeof message !== 'object' || !message.type) {
       return;
     }
-    
+
     logger.debug(
-      { 
+      {
         workerId: worker.id,
         messageType: message.type,
-      }, 
+      },
       `Received ${message.type} message from worker ${worker.id}`
     );
-    
+
     switch (message.type) {
       case 'taskCompleted':
         this.emit('taskCompleted', message.taskId, worker.id);
         break;
-        
+
       case 'taskFailed':
         this.emit('taskFailed', message.taskId, message.error, worker.id);
         break;
-        
+
       case 'log':
-        if (typeof message.level === 'string' && 
-            typeof logger[message.level as keyof typeof logger] === 'function') {
+        if (typeof message.level === 'string' &&
+          typeof logger[message.level as keyof typeof logger] === 'function') {
           (logger[message.level as keyof typeof logger] as Function)(
             message.data,
             message.message
           );
         }
         break;
-        
+
       default:
         // Forward other messages as events
         this.emit(`worker:${message.type}`, worker.id, message);
@@ -495,31 +509,31 @@ export class ClusterScheduler extends EventEmitter implements IClusterScheduler 
     if (!message || typeof message !== 'object' || !message.type) {
       return;
     }
-    
+
     logger.debug(
-      { 
+      {
         messageType: message.type,
-      }, 
+      },
       `Received ${message.type} message from primary`
     );
-    
+
     if (!this.scheduler) {
       logger.warn('Received message from primary but scheduler is not initialized');
       return;
     }
-    
+
     switch (message.type) {
       case 'scheduleTask': {
         try {
           // Convert the callback string back to a function
           const callbackFunction = new Function(`return ${message.callback}`)() as TaskCallback;
-          
+
           const taskId = this.scheduler.scheduleTask(
             callbackFunction,
             message.interval as number,
             message.options as TaskOptions
           );
-          
+
           // Send acknowledgment to primary
           if (process.send) {
             process.send({
@@ -530,13 +544,13 @@ export class ClusterScheduler extends EventEmitter implements IClusterScheduler 
           }
         } catch (error) {
           logger.error(
-            { 
+            {
               error: (error as Error).message,
               task: message.taskId,
-            }, 
+            },
             `Error scheduling task: ${(error as Error).message}`
           );
-          
+
           // Send error to primary
           if (process.send) {
             process.send({
@@ -548,18 +562,18 @@ export class ClusterScheduler extends EventEmitter implements IClusterScheduler 
         }
         break;
       }
-        
+
       case 'cancelTask':
         this.scheduler.cancelTask(message.taskId as string);
         break;
-        
+
       case 'setMaxConcurrency':
         this.scheduler.setMaxConcurrency(message.max as number);
         break;
-        
+
       case 'getRunningTasks':
         const runningTasks = this.scheduler.getRunningTasks();
-        
+
         // Send response to primary
         if (process.send) {
           process.send({
@@ -568,7 +582,7 @@ export class ClusterScheduler extends EventEmitter implements IClusterScheduler 
           } as ClusterMessage);
         }
         break;
-        
+
       default:
         // Forward unknown messages as events
         this.emit(`primary:${message.type}`, message);
@@ -584,11 +598,11 @@ export class ClusterScheduler extends EventEmitter implements IClusterScheduler 
     if (this.workers.length === 0) {
       return null;
     }
-    
+
     // Simple round-robin for now, but could be enhanced with load-based selection
     const worker = this.workers.shift()!;
     this.workers.push(worker);
-    
+
     return worker;
   }
-} 
+}

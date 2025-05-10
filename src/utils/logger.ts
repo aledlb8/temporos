@@ -8,12 +8,12 @@ export interface LoggerOptions {
    * The name of the logger
    */
   name?: string;
-  
+
   /**
    * The log level
    */
   level?: string;
-  
+
   /**
    * Whether to pretty print logs
    */
@@ -31,23 +31,23 @@ export function createLogger(options: LoggerOptions = {}): pino.Logger {
     level: process.env.LOG_LEVEL || 'info',
     prettyPrint: process.env.NODE_ENV !== 'production',
   };
-  
+
   const loggerOptions = {
     ...defaultOptions,
     ...options,
   };
-  
+
   const transport = loggerOptions.prettyPrint
     ? {
-        target: 'pino-pretty',
-        options: {
-          colorize: true,
-          translateTime: 'SYS:standard',
-          ignore: 'pid,hostname',
-        },
-      }
+      target: 'pino-pretty',
+      options: {
+        colorize: true,
+        translateTime: 'SYS:standard',
+        ignore: 'pid,hostname',
+      },
+    }
     : undefined;
-  
+
   return pino({
     name: loggerOptions.name,
     level: loggerOptions.level,
@@ -58,4 +58,4 @@ export function createLogger(options: LoggerOptions = {}): pino.Logger {
 /**
  * Default logger instance
  */
-export const logger = createLogger(); 
+export const logger = createLogger();

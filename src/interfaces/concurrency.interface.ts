@@ -30,4 +30,4 @@ export interface IConcurrencyMonitor {
    * @returns The current system load as a percentage
    */
   getSystemLoad(): number;
-} 
+}

@@ -37,4 +37,4 @@ declare module 'cluster' {
   export function setupMaster(settings?: ClusterSettings): void;
   export function setupPrimary(settings?: ClusterSettings): void;
   export function on(event: string, listener: (...args: any[]) => void): void;
-} 
+}

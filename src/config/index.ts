@@ -6,52 +6,52 @@ export interface TemporosConfig {
    * Default interval for checking tasks (in milliseconds)
    */
   defaultCheckInterval: number;
-  
+
   /**
    * Default maximum concurrency
    */
   defaultMaxConcurrency: number;
-  
+
   /**
    * Default retry attempts
    */
   defaultRetryAttempts: number;
-  
+
   /**
    * Default retry delay (in milliseconds)
    */
   defaultRetryDelay: number;
-  
+
   /**
    * Default task timeout (in milliseconds)
    */
   defaultTaskTimeout: number;
-  
+
   /**
    * Whether to use dynamic concurrency by default
    */
   useDynamicConcurrency: boolean;
-  
+
   /**
    * Default concurrency monitor interval (in milliseconds)
    */
   concurrencyMonitorInterval: number;
-  
+
   /**
    * Maximum system load percentage before reducing concurrency
    */
   maxSystemLoadPercentage: number;
-  
+
   /**
    * Whether to persist task history
    */
   persistTaskHistory: boolean;
-  
+
   /**
    * Maximum number of task history entries to keep per task
    */
   maxTaskHistoryEntries: number;
-  
+
   /**
    * Whether to enable metrics collection
    */
@@ -99,4 +99,4 @@ export function updateConfig(newConfig: Partial<TemporosConfig>): TemporosConfig
     ...newConfig,
   };
   return getConfig();
-} 
+}

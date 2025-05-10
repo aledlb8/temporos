@@ -74,4 +74,4 @@ export interface IScheduler {
    * Stop the scheduler and cancel all tasks
    */
   stop(): void;
-} 
+}

@@ -60,4 +60,4 @@ export interface IClusterScheduler {
    * @returns True if the worker was removed, false otherwise
    */
   removeWorker(workerId: string): boolean;
-} 
+}
