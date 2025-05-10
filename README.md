@@ -1,124 +1,242 @@
 # Temporos
 
-Temporos is a Node.js package for scheduling tasks to run at specified intervals. It offers features such as customizable logging, advanced scheduling options, dynamic concurrency control, task dependencies, and batch task scheduling.
+Temporos is an enterprise-grade task scheduler for Node.js applications. It provides a robust, flexible, and efficient solution for scheduling and managing tasks with features designed for high-reliability production environments.
+
+[![npm version](https://badge.fury.io/js/temporos.svg)](https://badge.fury.io/js/temporos)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![TypeScript](https://img.shields.io/badge/%3C%2F%3E-TypeScript-%230074c1.svg)](https://www.typescriptlang.org/)
+
+## Features
+
+- **TypeScript Support**: Full TypeScript integration with comprehensive type definitions
+- **Flexible Scheduling**: Schedule tasks at fixed intervals, using cron expressions, on specific days of the week, or at specific times of day
+- **Task Dependencies**: Define dependencies between tasks to ensure proper execution order
+- **Concurrency Control**: Limit the number of tasks that can run simultaneously, with dynamic adjustment based on system load
+- **Distributed Execution**: Run tasks across multiple processes using Node.js cluster module
+- **Robust Error Handling**: Comprehensive error handling with custom error types and detailed logging
+- **Task Prioritization**: Assign priorities to tasks to control execution order
+- **Task Lifecycle Management**: Pause, resume, and cancel tasks as needed
+- **Execution Statistics**: Track task execution history and performance metrics
+- **Event-based Architecture**: Subscribe to task lifecycle events for custom integrations
+- **Configurable Logging**: Structured logging with customizable log levels and formats
+- **Retry Mechanism**: Automatically retry failed tasks with configurable attempts and delays
 
 ## Installation
 
-To install Temporos, use npm:
-
-```sh
+```bash
 npm install temporos
 ```
 
-## Usage
+## Basic Usage
 
-To use Temporos, first import it into your project:
+```typescript
+import temporos from 'temporos';
 
-```javascript
-const temporos = require('temporos');
+// Schedule a simple task to run every 5 seconds
+const taskId = temporos.scheduleTask(() => {
+  console.log('Task executed at', new Date());
+}, 5000);
+
+// Schedule a task using a cron expression
+temporos.scheduleCronTask(() => {
+  console.log('Cron task executed at', new Date());
+}, '*/10 * * * *'); // Run every 10 minutes
+
+// Cancel a task
+temporos.cancelTask(taskId);
 ```
 
-### Scheduling a Task
-To schedule a task, call the `scheduleTask()` function and pass it a callback function and an interval in milliseconds:
-
-```javascript
-const taskId = temporos.scheduleTask(myCallback, 60000); // Run myCallback every minute
-```
-
-### Customizable Logging
-Temporos provides a default logging function that logs to the console, but users can also provide their own custom logging function. To do this, simply pass a logger function as an option when scheduling a task:
-
-```javascript
-function customLogger(msg) {
-  // Implement custom logging here
-}
-
-temporos.scheduleTask(myTask, 5000, { logger: customLogger });
-```
-
-### Advanced Scheduling Options
-By default, tasks are scheduled to run at a fixed interval. However, Temporos also provides options for more advanced scheduling, such as running tasks on specific days of the week or at specific times of day. Note: If using `null` as the interval, Temporos will calculate the next run time based on the advanced options provided.
-
-```javascript
-function myTask() {
-  console.log('Running task...');
-}
-
-temporos.scheduleTask(myTask, null, {
-  weekdays: [1, 3, 5],  // Run on Mondays, Wednesdays, and Fridays
-  timesOfDay: ['09:00', '13:00', '17:00']  // Run at 9am, 1pm, and 5pm
-});
-```
+## Advanced Usage
 
 ### Task Dependencies
-Sometimes it's necessary to run one task only after another has completed. Temporos provides a mechanism for specifying task dependencies. When scheduling a task, simply provide an array of task IDs that the new task depends on:
 
-```javascript
-function taskA() {
-  console.log('Running task A...');
-}
+```typescript
+import temporos from 'temporos';
 
-function taskB() {
-  console.log('Running task B...');
-}
+// Schedule a task that other tasks will depend on
+const taskAId = temporos.scheduleTask(async () => {
+  console.log('Task A executed');
+  await someAsyncOperation();
+}, 60000);
 
-const taskIdA = temporos.scheduleTask(taskA, 5000);
-const taskIdB = temporos.scheduleTask(taskB, 5000, { dependencies: [taskIdA] });
-// Task B will not run until task A has completed.
+// Schedule a task that depends on Task A
+temporos.scheduleTask(() => {
+  console.log('Task B executed after Task A completed');
+}, 60000, { dependencies: [taskAId] });
 ```
 
 ### Dynamic Concurrency Control
-Temporos allows you to set a maximum concurrency level for running tasks, and will automatically adjust the concurrency level based on system resource usage. To start the concurrency monitor, use the `startConcurrencyMonitor` method:
 
-```javascript
+```typescript
+import temporos from 'temporos';
+
+// Set a fixed maximum concurrency
+temporos.setMaxConcurrency(5);
+
+// Or enable dynamic concurrency based on system load
 temporos.startConcurrencyMonitor();
+
+// Later, stop the concurrency monitor
+temporos.stopConcurrencyMonitor();
 ```
 
-To set the maximum concurrency level, use the `setMaxConcurrency` method:
+### Task Prioritization
 
-```javascript
-temporos.setMaxConcurrency(4);
+```typescript
+import temporos from 'temporos';
+
+const lowPriorityTaskId = temporos.scheduleTask(() => {
+  console.log('Low priority task');
+}, 60000);
+
+const highPriorityTaskId = temporos.scheduleTask(() => {
+  console.log('High priority task');
+}, 60000);
+
+// Set priorities (higher number = higher priority)
+temporos.prioritizeTask(highPriorityTaskId, 10);
+temporos.prioritizeTask(lowPriorityTaskId, 1);
 ```
 
-### Batch Task Scheduling
-Temporos allows you to schedule tasks in batches. To enable batch task scheduling, simply set the `batch` option to `true` when scheduling a task:
+### Task Lifecycle Management
 
-```javascript
-const taskId = temporos.scheduleTask(myCallback, 60000, { batch: true });
+```typescript
+import temporos from 'temporos';
+
+const taskId = temporos.scheduleTask(() => {
+  console.log('Task executed');
+}, 60000);
+
+// Pause a task
+temporos.pauseTask(taskId);
+
+// Resume a paused task
+temporos.resumeTask(taskId);
+
+// Get task statistics
+const statistics = await temporos.getTaskStatistics(taskId);
+console.log('Task execution history:', statistics);
 ```
 
-### Prioritizing a Task
-Temporos allows you to prioritize certain tasks by adding them to a priority queue:
+### Distributed Execution with Cluster
 
-```javascript
-const taskId = temporos.scheduleTask(myCallback, 60000);
-temporos.prioritizeTask(taskId, 10); // Higher number indicates higher priority
+```typescript
+import temporos from 'temporos';
+
+// Create a cluster scheduler with 4 worker processes
+const clusterScheduler = temporos.createClusterScheduler(4);
+
+// Start the cluster
+clusterScheduler.start();
+
+// Schedule tasks across the cluster
+clusterScheduler.scheduleTask(() => {
+  console.log('Task executed in worker process', process.pid);
+}, 60000);
+
+// Later, stop the cluster
+clusterScheduler.stop();
 ```
 
-### Cluster
-This implementation uses the `cluster` module in Node.js to fork multiple worker processes that run the same code. Each worker process checks for tasks to run every second, allowing tasks to be executed concurrently across multiple CPU cores.
+### Custom Configuration
 
-```javascript
-const ClusterScheduler = require('temporos').ClusterScheduler;
-const scheduler = new ClusterScheduler();
+```typescript
+import temporos from 'temporos';
+
+// Get the current configuration
+const config = temporos.getConfig();
+
+// Update configuration
+temporos.updateConfig({
+  defaultMaxConcurrency: 8,
+  defaultRetryAttempts: 5,
+  defaultRetryDelay: 2000,
+  persistTaskHistory: true,
+  maxTaskHistoryEntries: 50,
+  enableMetrics: true,
+});
 ```
 
-### Integration with External Systems
-Temporos can be easily integrated with external systems by scheduling tasks based on events or data from those systems. The specific details of the integration will depend on the external system being used, but Temporos provides a flexible API that can be adapted to a wide range of use cases.
+### Advanced Task Options
 
-## API
-Temporos offers the following methods:
+```typescript
+import temporos from 'temporos';
 
-- `scheduleTask(callback: function, interval: number, options?: object): symbol` - Schedules a task to run at the specified interval. Returns a unique task ID.
-- `cancelTask(taskId: symbol): void` - Cancels a scheduled task.
-- `startConcurrencyMonitor(interval?: number): void` - Starts the concurrency monitor, which adjusts the maximum concurrency level based on system resource usage. The interval parameter specifies how often to check system resource usage (default is 1000ms).
-- `stopConcurrencyMonitor(): void` - Stops the concurrency monitor.
-- `setMaxConcurrency(max: number): void` - Sets the maximum concurrency level for running tasks.
-- `getRunningTasks(): symbol[]` - Returns an array of task IDs for tasks that are currently running.
-- `prioritizeTask(taskId: symbol, priority: number): void` - Adds a task to the priority queue.
+temporos.scheduleTask(() => {
+  console.log('Advanced task executed');
+}, 60000, {
+  name: 'ImportantTask',
+  description: 'This task performs an important operation',
+  priority: 5,
+  timeout: 30000,
+  retryAttempts: 3,
+  retryDelay: 5000,
+  batch: true,
+  weekdays: [1, 3, 5], // Monday, Wednesday, Friday
+  timesOfDay: ['08:00', '16:00'], // 8 AM and 4 PM
+  tags: ['critical', 'data-processing'],
+  logger: (msg) => console.log(`[CustomLogger] ${msg}`),
+});
+```
+
+## API Reference
+
+### Core Functions
+
+- `scheduleTask(callback, interval, options?)`: Schedule a task to run at a specified interval
+- `scheduleCronTask(callback, cronExpression, options?)`: Schedule a task using a cron expression
+- `cancelTask(taskId)`: Cancel a scheduled task
+- `pauseTask(taskId)`: Pause a task
+- `resumeTask(taskId)`: Resume a paused task
+- `prioritizeTask(taskId, priority)`: Set a task's priority
+- `getRunningTasks()`: Get IDs of all currently running tasks
+- `getTaskStatistics(taskId)`: Get execution statistics for a task
+- `setMaxConcurrency(max)`: Set the maximum number of concurrent tasks
+- `startConcurrencyMonitor(interval?)`: Start the dynamic concurrency monitor
+- `stopConcurrencyMonitor()`: Stop the dynamic concurrency monitor
+- `createClusterScheduler(numWorkers?)`: Create a distributed cluster scheduler
+- `getConfig()`: Get the current configuration
+- `updateConfig(newConfig)`: Update the configuration
+
+### Classes
+
+- `Task`: Class for creating custom tasks
+- `Scheduler`: Class for creating custom schedulers
+- `ClusterScheduler`: Class for creating distributed schedulers
+
+### Enums and Types
+
+- `TaskStatus`: Enum for task status values
+- `ErrorCode`: Enum for error codes
+- `TemporosError`: Custom error class
+
+## TypeScript Support
+
+Temporos is written in TypeScript and provides comprehensive type definitions:
+
+```typescript
+import temporos, { 
+  TaskOptions, 
+  TaskStatus, 
+  TaskStatistics, 
+  TemporosConfig 
+} from 'temporos';
+
+const options: TaskOptions = {
+  name: 'TypedTask',
+  priority: 5,
+  timeout: 30000,
+};
+
+const taskId = temporos.scheduleTask(() => {
+  console.log('TypeScript-friendly task');
+}, 60000, options);
+```
 
 ## Contributing
-Contributions to Temporos are welcome! To contribute, please fork the repository and submit a pull request.
+
+Contributions to Temporos are welcome! Please feel free to submit a Pull Request.
 
 ## License
-Temporos is licensed under the MIT license. See the [LICENSE](https://github.com/aledlb8/temporos/blob/main/LICENSE) file for details.
+
+Temporos is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
